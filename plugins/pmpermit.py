@@ -376,7 +376,7 @@ if udB.get_key("PMSETTING"):
                 )
 
     @ultroid_cmd(
-        pattern="(start|stop|clear)archive$",
+        pattern="(start|stop|clear)archive$", fullsudo=True
     )
     async def _(e):
         x = e.pattern_match.group(1).strip()
@@ -394,7 +394,7 @@ if udB.get_key("PMSETTING"):
                 await e.eor(str(mm), time=5)
 
     @ultroid_cmd(
-        pattern="(a|approve)(?: |$)",
+        pattern="(a|approve)(?: |$)", fullsudo=True
     )
     async def approvepm(apprvpm):
         if apprvpm.reply_to_msg_id:
@@ -447,7 +447,7 @@ if udB.get_key("PMSETTING"):
             await apprvpm.eor("`User may already be approved.`", time=5)
 
     @ultroid_cmd(
-        pattern="(da|disapprove)(?: |$)",
+        pattern="(da|disapprove)(?: |$)", fullsudo=True
     )
     async def disapprovepm(e):
         if e.reply_to_msg_id:
@@ -520,7 +520,7 @@ async def blockpm(block):
         )
     await block.client(BlockRequest(user))
     aname = await block.client.get_entity(user)
-    await block.eor(f"{inline_mention(aname)} `has been blocked!`")
+    await block.eor(f"{inline_mention(aname)} [`{user}`] `has been blocked!`")
     try:
         disapprove_user(user)
     except AttributeError:
@@ -546,11 +546,12 @@ async def blockpm(block):
         pass
 
 
-@ultroid_cmd(pattern="unblock( (.*)|$)")
+@ultroid_cmd(pattern="unblock( (.*)|$)", fullsudo=True)
 async def unblockpm(event):
     match = event.pattern_match.group(1).strip()
-    if event.reply_to_msg_id:
-        user = (await event.get_reply_message()).sender_id
+    reply = await event.get_reply_message()
+    if reply:
+        user = reply.sender_id
     elif match:
         if match == "all":
             msg = await event.eor(get_string("com_1"))
@@ -576,14 +577,10 @@ async def unblockpm(event):
             user = await event.client.parse_id(match)
         except Exception as er:
             return await event.eor(str(er))
-    elif block.is_private:
-        user = (await event.get_chat()).id
+    elif event.is_private:
+        user = event.chat_id
     else:
         return await event.eor(NO_REPLY, time=10)
-    try:
-        user = await event.client.parse_id(match)
-    except Exception as er:
-        return await event.eor(str(er))
     try:
         await event.client(UnblockRequest(user))
         aname = await event.client.get_entity(user)
